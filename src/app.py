@@ -5,7 +5,7 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
@@ -20,6 +20,15 @@ app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
 # In-memory activity database
+from pydantic import BaseModel
+
+# Activity creation model
+class ActivityCreate(BaseModel):
+    name: str
+    description: str
+    schedule: str
+    max_participants: int
+
 activities = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
@@ -83,9 +92,24 @@ def root():
     return RedirectResponse(url="/static/index.html")
 
 
+
 @app.get("/activities")
 def get_activities():
     return activities
+
+
+# Endpoint to create a new activity
+@app.post("/activities/create")
+async def create_activity(activity: ActivityCreate):
+    if activity.name in activities:
+        raise HTTPException(status_code=400, detail="Activity with this name already exists")
+    activities[activity.name] = {
+        "description": activity.description,
+        "schedule": activity.schedule,
+        "max_participants": activity.max_participants,
+        "participants": []
+    }
+    return {"message": f"Activity '{activity.name}' created successfully"}
 
 
 @app.post("/activities/{activity_name}/signup")

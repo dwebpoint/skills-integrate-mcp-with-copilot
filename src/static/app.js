@@ -155,6 +155,60 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Handle create activity form submission
+  const createActivityForm = document.getElementById("create-activity-form");
+  const createActivityMessage = document.getElementById("create-activity-message");
+
+  if (createActivityForm) {
+    createActivityForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = document.getElementById("new-activity-name").value.trim();
+      const description = document.getElementById("new-activity-description").value.trim();
+      const schedule = document.getElementById("new-activity-schedule").value.trim();
+      const max = parseInt(document.getElementById("new-activity-max").value, 10);
+
+      if (!name || !description || !schedule || !max) {
+        createActivityMessage.textContent = "Please fill in all fields.";
+        createActivityMessage.className = "error";
+        createActivityMessage.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const response = await fetch("/activities/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            description,
+            schedule,
+            max_participants: max
+          })
+        });
+        const result = await response.json();
+        if (response.ok) {
+          createActivityMessage.textContent = result.message;
+          createActivityMessage.className = "success";
+          createActivityForm.reset();
+          // Refresh activities list and dropdown
+          fetchActivities();
+        } else {
+          createActivityMessage.textContent = result.detail || "An error occurred";
+          createActivityMessage.className = "error";
+        }
+        createActivityMessage.classList.remove("hidden");
+        setTimeout(() => {
+          createActivityMessage.classList.add("hidden");
+        }, 5000);
+      } catch (error) {
+        createActivityMessage.textContent = "Failed to create activity. Please try again.";
+        createActivityMessage.className = "error";
+        createActivityMessage.classList.remove("hidden");
+        console.error("Error creating activity:", error);
+      }
+    });
+  }
+
   // Initialize app
   fetchActivities();
 });
